@@ -17,7 +17,7 @@ except ImportError as e:
     print(f"Hata: Modüller bulunamadı! 'yetenekler' klasörünü kontrol et. Detay: {e}")
 
 # --- KİMLİK VE AYARLAR ---
-PERPLEXITY_API_KEY = "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"
+PERPLEXITY_API_KEY = "pplx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 WAKE_WORD = "yusuf"
 GMAIL_USER = "mesutnalkiran@gmail.com"
 GMAIL_PASS = "nxru lvhd bquf hinx" # Uygulama şifren

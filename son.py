@@ -18,7 +18,7 @@ from openai import OpenAI
 import re
 
 # --- KİMLİK VE AYARLAR ---
-PERPLEXITY_API_KEY = "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"
+PERPLEXITY_API_KEY = "pplx-xxxxxxxxxxxxxxxxxxxxx"
 WAKE_WORD = "yusuf"
 GMAIL_USER = "mesutnalkiran@gmail.com"
 GMAIL_PASS = "nxru lvhd bquf hinx"

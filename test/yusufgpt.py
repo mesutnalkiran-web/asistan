@@ -18,13 +18,13 @@ import re
 import sys
 
 # --- KİMLİK VE AYARLAR ---
-PERPLEXITY_API_KEY = "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"
-ELEVENLABS_API_KEY = "sk_506308c8ee74b791eb88570227b42311cfb1a59d5c4130fa" # <--- Kendi anahtarını buraya yaz
+PERPLEXITY_API_KEY = "pplx-xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+ELEVENLABS_API_KEY = "sk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # <--- Kendi anahtarını buraya yaz
 VOICE_ID = "01p4omegjS2n3rSDCM5u" # <--- Senin istediğin yeni ses ID'si
 WAKE_WORD = "yusuf"
 MEMORY_FILE = "yusuf_hafiza.json"
 GMAIL_ADRESIM = "mesutnalkiran@gmail.com"
-GMAIL_SIFREM = "nxru lvhd bquf hinx"
+GMAIL_SIFREM = "nxru lvhd bquxxxxxxx"
 
 client = OpenAI(api_key=PERPLEXITY_API_KEY, base_url="https://api.perplexity.ai")
 

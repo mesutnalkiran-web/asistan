@@ -1,6 +1,5 @@
 import speech_recognition as sr
 import asyncio
-import edge_tts
 import os
 import subprocess
 import json
@@ -12,6 +11,7 @@ import random
 import threading
 import time
 import psutil
+from collections import OrderedDict
 from datetime import datetime
 from email.message import EmailMessage
 from openai import OpenAI
@@ -22,6 +22,15 @@ PERPLEXITY_API_KEY = "pplx-xxxxxxxxxxxxxxxxxxxxx"
 WAKE_WORD = "yusuf"
 GMAIL_USER = "mesutnalkiran@gmail.com"
 GMAIL_PASS = "nxru lvhd bquf hinx"
+
+# --- PİPER TTS AYARLARI ---
+PIPER_MODEL = os.path.expanduser("~/.local/share/piper/voices/tr_TR-dfki-medium/tr_TR-dfki-medium.onnx")
+PIPER_OUTPUT = "piper_output.wav"
+_tts_lock = threading.Lock()
+
+# --- YANIT ÖNBELLEĞİ (en fazla 256 kayıt) ---
+_CACHE_MAX = 256
+_response_cache: OrderedDict = OrderedDict()
 
 client = OpenAI(api_key=PERPLEXITY_API_KEY, base_url="https://api.perplexity.ai")
 
@@ -80,21 +89,36 @@ class YusufDJFace:
 
 face_app = None
 
+def _piper_speak_sync(text: str) -> None:
+    """Piper TTS ile ses üret ve çal (senkron, kilit altında)."""
+    with _tts_lock:
+        try:
+            subprocess.run(
+                ["piper", "--model", PIPER_MODEL, "--output-file", PIPER_OUTPUT],
+                input=text.encode("utf-8"),
+                check=True,
+                stderr=subprocess.DEVNULL,
+            )
+            subprocess.run(["aplay", "-q", PIPER_OUTPUT], check=False)
+            if os.path.exists(PIPER_OUTPUT):
+                os.remove(PIPER_OUTPUT)
+        except FileNotFoundError as e:
+            print(f"[TTS Uyarı] Piper veya aplay bulunamadı: {e}")
+        except Exception as e:
+            print(f"[TTS Hata] {e}")
+
 async def speak(text):
     global face_app
     temiz_metin = metin_temizle(text)
     print(f"Yusuf: {temiz_metin}")
+    if face_app:
+        face_app.set_speaking(True)
     try:
-        audio_file = f"output_{random.randint(1,1000)}.mp3"
-        communicate = edge_tts.Communicate(temiz_metin, "tr-TR-AhmetNeural", rate="+15%", pitch="-5Hz")
-        await communicate.save(audio_file)
-        if face_app: face_app.set_speaking(True)
-        process = subprocess.Popen(["mpg123", "-q", audio_file])
-        process.wait()
-        if face_app: face_app.set_speaking(False)
-        if os.path.exists(audio_file): os.remove(audio_file)
-    except:
-        if face_app: face_app.set_speaking(False)
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, _piper_speak_sync, temiz_metin)
+    finally:
+        if face_app:
+            face_app.set_speaking(False)
 
 def listen(duration=5):
     r = sr.Recognizer()
@@ -207,8 +231,15 @@ async def yusuf_logic():
             else:
                 try:
                     sys_prompt = "Sen Yusufsun. Efendim diye hitap et. 1 cümleyi geçme. Asla vclock gibi sitelerden bahsetme."
-                    resp = client.chat.completions.create(model="sonar", messages=[{"role": "system", "content": sys_prompt}, {"role": "user", "content": cmd}])
-                    cevap = re.sub(r"\[\d+\]", "", resp.choices[0].message.content)
+                    if cmd in _response_cache:
+                        cevap = _response_cache[cmd]
+                        _response_cache.move_to_end(cmd)
+                    else:
+                        resp = client.chat.completions.create(model="sonar", messages=[{"role": "system", "content": sys_prompt}, {"role": "user", "content": cmd}])
+                        cevap = re.sub(r"\[\d+\]", "", resp.choices[0].message.content)
+                        _response_cache[cmd] = cevap
+                        if len(_response_cache) > _CACHE_MAX:
+                            _response_cache.popitem(last=False)
                     await speak(cevap)
 
                     if any(w in cmd.lower() for w in ["yol", "tarif", "git", "nerede"]):
